@@ -499,3 +499,46 @@ export async function updateUser(user: IUpdateUser) {
       console.log(error);
     }
 }
+
+// FOLLOWING FUNCTIONALITY
+
+export async function followUser(followerId: string, followingId: string) {
+    try {
+        const newFollow = await databases.createDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.followsCollectionId,
+            ID.unique(),
+            {
+                followerId,
+                followingId,
+                createdAt: new Date().toISOString(),
+            }
+        );
+        return newFollow;
+    } catch (error) {
+        console.log(error);
+        throw new Error("Failed to follow user");
+    }
+}
+
+export async function unfollowUser(followerId: string, followingId: string) {
+    try {
+        // This assumes you've set up querying capabilities to find a specific follow relationship
+        const followDocument = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.followsCollectionId,
+            [
+                Query.equal('followerId', followerId),
+                Query.equal('followingId', followingId)
+            ]
+        );
+        if (followDocument.documents.length === 0) throw new Error("Follow relationship not found");
+        const documentId = followDocument.documents[0].$id;
+        await databases.deleteDocument(appwriteConfig.databaseId, appwriteConfig.followsCollectionId, documentId);
+        return { status: 'ok', message: 'Unfollowed successfully' };
+    } catch (error) {
+        console.log(error);
+        throw new Error("Failed to unfollow user");
+    }
+}
+
